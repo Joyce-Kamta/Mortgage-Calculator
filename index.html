@@ -1,0 +1,279 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"> <!-- displays site properly based on user's device -->
+
+  <link rel="icon" type="image/png" sizes="32x32" href="./assets/images/favicon-32x32.png">
+  <link rel="stylesheet" href="style.css">
+  
+  <title>Frontend Mentor | Mortgage repayment calculator</title>
+
+  <!-- Feel free to remove these styles or customise in your own stylesheet 👍 -->
+  <style>
+    .attribution { font-size: 0.6875rem; text-align: center; }
+    .attribution a { color: hsl(228, 45%, 44%); }
+  </style>
+</head>
+<body>
+  <div class="card" role="main" aria-label="Mortgage Calculator">
+ 
+  <!-- ════ FORM PANEL ════ -->
+  <div class="form-panel">
+    <div class="form-header">
+      <h1>Mortgage Calculator</h1>
+      <button class="clear-btn" id="clearBtn" type="button">Clear All</button>
+    </div>
+ 
+    <!-- Amount -->
+    <div class="field" id="f-amount">
+      <label for="inp-amount">Mortgage Amount</label>
+      <div class="input-wrap" id="w-amount">
+        <span class="adorn">£</span>
+        <input type="number" id="inp-amount" placeholder="300000" min="1" step="1000"
+               aria-required="true" aria-describedby="e-amount"/>
+      </div>
+      <span class="error-msg" id="e-amount" role="alert">This field is required</span>
+    </div>
+ 
+    <!-- Term + Rate -->
+    <div class="field-row">
+      <div class="field" id="f-term">
+        <label for="inp-term">Mortgage Term</label>
+        <div class="input-wrap" id="w-term">
+          <input type="number" id="inp-term" placeholder="25" min="1" max="40"
+                 aria-required="true" aria-describedby="e-term"/>
+          <span class="adorn">years</span>
+        </div>
+        <span class="error-msg" id="e-term" role="alert">Required</span>
+      </div>
+      <div class="field" id="f-rate">
+        <label for="inp-rate">Interest Rate</label>
+        <div class="input-wrap" id="w-rate">
+          <input type="number" id="inp-rate" placeholder="5.25" min="0.01" max="30" step="0.01"
+                 aria-required="true" aria-describedby="e-rate"/>
+          <span class="adorn">%</span>
+        </div>
+        <span class="error-msg" id="e-rate" role="alert">Required</span>
+      </div>
+    </div>
+ 
+    <!-- Type -->
+    <div class="field">
+      <label>Mortgage Type</label>
+      <div class="radio-group" role="radiogroup" aria-label="Mortgage type">
+        <label class="radio-option">
+          <input type="radio" name="mtype" value="repayment" checked aria-label="Repayment"/>
+          <span class="radio-dot" aria-hidden="true"></span>
+          Repayment
+        </label>
+        <label class="radio-option">
+          <input type="radio" name="mtype" value="interest" aria-label="Interest Only"/>
+          <span class="radio-dot" aria-hidden="true"></span>
+          Interest Only
+        </label>
+      </div>
+    </div>
+ 
+    <!-- CTA -->
+    <button class="calc-btn" id="calcBtn" type="button" aria-label="Calculate Repayments">
+      <!-- calculator icon -->
+      <img src="icon-calculator.svg" alt="" aria-hidden="true" width="24"/>
+      Calculate Repayments
+    </button>
+  </div>
+ 
+  <!-- ════ RESULT PANEL ════ -->
+  <div class="result-panel" aria-live="polite" aria-atomic="true">
+ 
+    <!-- Empty state — replace the SVG with your own file: <img src="./assets/illustration.svg" …/> -->
+    <div class="empty-state" id="emptyState">
+      <img src="illustration-empty.svg" alt="" aria-hidden="true" class="empty-illo"/>
+ 
+      <h2>Results shown here</h2>
+      <p>Complete the form and click "calculate repayments" to see what your monthly repayments would be.</p>
+    </div>
+ 
+    <!-- Results state -->
+    <div class="results-state" id="resultsState">
+      <p class="results-intro">Your results are shown below based on the information you provided.
+        To adjust the results, edit the form and click "calculate repayments" again.</p>
+ 
+      <div class="monthly-section">
+        <p class="section-label">Your monthly repayments</p>
+        <p class="monthly-amount" id="outMonthly">—</p>
+      </div>
+ 
+      <div class="results-divider"></div>
+ 
+      <div class="total-section">
+        <p class="section-label">Total you'll repay over the term</p>
+        <p class="total-amount" id="outTotal">—</p>
+      </div>
+    </div>
+ 
+  </div>
+</div>
+
+
+  
+  <footer class="attribution">
+    Challenge by <a href="https://www.frontendmentor.io?ref=challenge">Frontend Mentor</a>. 
+    Coded by <a href="#">kAMTA Joyce</a>.
+  </footer>
+
+  <script>
+    
+const inAmount   = document.getElementById('inp-amount');   // input montant
+const inTerm     = document.getElementById('inp-term');     // input durée
+const inRate     = document.getElementById('inp-rate');     // input taux
+
+const calcBtn    = document.getElementById('calcBtn');      // bouton Calculate
+const clearBtn   = document.getElementById('clearBtn');     // bouton Clear All
+
+const emptyEl    = document.getElementById('emptyState');   // panneau vide (illustration)
+const resultEl   = document.getElementById('resultsState'); // panneau résultats
+
+const outMonthly = document.getElementById('outMonthly');   // affichage mensualité
+const outTotal   = document.getElementById('outTotal');     // affichage total
+
+
+
+function gbp(n) {
+  return '£' + n.toLocaleString('en-GB', {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2
+  });
+}
+
+
+
+function setError(fieldId, wrapId, show) {
+  document.getElementById(fieldId).classList.toggle('has-error', show);
+  document.getElementById(wrapId).classList.toggle('error-state', show);
+}
+
+
+
+function validate() {
+  const P = parseFloat(inAmount.value); // principal (montant)
+  const T = parseInt(inTerm.value);     // durée en années
+  const R = parseFloat(inRate.value);   // taux annuel %
+
+  const amountInvalid = !inAmount.value || isNaN(P) || P <= 0;
+  const termInvalid   = !inTerm.value   || isNaN(T) || T <= 0;
+  const rateInvalid   = !inRate.value   || isNaN(R) || R <= 0;
+
+  setError('f-amount', 'w-amount', amountInvalid);
+  setError('f-term',   'w-term',   termInvalid);
+  setError('f-rate',   'w-rate',   rateInvalid);
+
+  // retourne true seulement si AUCUN champ n'est invalide
+  return !amountInvalid && !termInvalid && !rateInvalid;
+}
+
+
+
+function calculate() {
+  // Arrête si un champ est invalide
+  if (!validate()) return;
+
+  const P = parseFloat(inAmount.value);        
+  const n = parseInt(inTerm.value) * 12;       
+  const r = parseFloat(inRate.value) / 100 / 12; 
+
+  
+  const type = document.querySelector('input[name="mtype"]:checked').value;
+
+  let monthly, total;
+
+  if (type === 'repayment') {
+
+    if (r === 0) {
+      
+      monthly = P / n;
+    } else {
+      // Formule d'annuité standard
+      const factor = Math.pow(1 + r, n); // (1+r)^n
+      monthly = P * (r * factor) / (factor - 1);
+    }
+    total = monthly * n;
+
+  } else {
+    // Interest Only
+    monthly = P * r;
+    total   = (monthly * n) + P; // intérêts + remboursement capital
+  }
+
+  // Mise à jour du DOM avec les valeurs formatées
+  outMonthly.textContent = gbp(monthly);
+  outTotal.textContent   = gbp(total);
+
+  // ── Bascule des panneaux ──
+  // On cache l'illustration vide
+  emptyEl.classList.add('hidden');
+
+  // void element.offsetWidth force un "reflow" (recalcul du layout).
+  // Cela permet de relancer l'animation CSS même si le panneau
+  // était déjà visible (ex : 2e calcul d'affilée).
+  resultEl.classList.remove('visible');
+  void resultEl.offsetWidth; // ← reflow
+  resultEl.style.display = 'block';
+  resultEl.classList.add('visible');
+}
+
+
+
+function clearAll() {
+  // Vide les inputs
+  inAmount.value = '';
+  inTerm.value   = '';
+  inRate.value   = '';
+
+  // Remet "Repayment" coché par défaut
+  document.querySelector('input[name="mtype"][value="repayment"]').checked = true;
+
+  // Efface toutes les erreurs
+  setError('f-amount', 'w-amount', false);
+  setError('f-term',   'w-term',   false);
+  setError('f-rate',   'w-rate',   false);
+
+  // Réaffiche l'état vide, cache les résultats
+  emptyEl.classList.remove('hidden');
+  resultEl.classList.remove('visible');
+  resultEl.style.display = 'none';
+}
+
+
+
+
+// Clic sur le bouton Calculate
+calcBtn.addEventListener('click', calculate);
+
+// Clic sur Clear All
+clearBtn.addEventListener('click', clearAll);
+
+// Touche Entrée dans n'importe quel input → déclenche le calcul
+[inAmount, inTerm, inRate].forEach(function(el) {
+  el.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') calculate();
+  });
+});
+
+// Efface l'erreur dès que l'utilisateur recommence à taper
+// (meilleure UX : pas besoin d'attendre le prochain submit)
+[
+  [inAmount, 'f-amount', 'w-amount'],
+  [inTerm,   'f-term',   'w-term'],
+  [inRate,   'f-rate',   'w-rate'],
+].forEach(function(item) {
+  var el    = item[0];
+  var fId   = item[1];
+  var wId   = item[2];
+  el.addEventListener('input', function() {
+    setError(fId, wId, false);
+  });
+});
+  </script>
+</body>
+</html>
